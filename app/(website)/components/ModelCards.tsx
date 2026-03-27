@@ -26,7 +26,7 @@ export default function ModelCards() {
 
     const data = await response.json();
     if (!response.ok) {
-      alert(data.message);
+      alert(data.error || data.message || "Failed to fetch models");
       return;
     }
 
