@@ -5,7 +5,7 @@ import ActionButtons from "./components/ActionButtons";
 
 export const metadata: Metadata = {
   title: "Swati-Kaur",
-  description: "Developed by Swati-Kaur",
+  description: "Developed by ByteCloude",
 };
 
 export default function WebsiteLayout({
