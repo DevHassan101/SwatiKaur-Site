@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Model {
+  id               Int      @id @default(autoincrement())
+  model_name       String
+  model_age        Int
+  model_location   String   @db.Text
+  model_image      String?
+  model_desc       String   @db.Text
+  slug             String?  @unique
+  meta_title       String?
+  meta_description String?
+  meta_keyword     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Blog {
+  id               Int      @id @default(autoincrement())
+  blog_name        String
+  blog_image       String?
+  blog_date        DateTime @default(now())
+  blog_desc        String   @db.Text
+  slug             String?  @unique
+  meta_title       String?
+  meta_description String?
+  meta_keyword     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

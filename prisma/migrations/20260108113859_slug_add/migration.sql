@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Blog" ALTER COLUMN "slug" DROP NOT NULL;
+
+-- AlterTable
+ALTER TABLE "Model" ALTER COLUMN "slug" DROP NOT NULL;

@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+} */
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.bg-header {
+  background-color: rgba(150, 0, 0, 0.500);
+  backdrop-filter: blur(3px);
+}
+
+.hero-section {
+  width: 100%;
+  background-image: linear-gradient(to bottom right, purple, #7a0000, #c40000), url('/images/2.png');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: lighten;
+}
+
+.footer-section{
+  width: 100%;
+  background-image: linear-gradient(to bottom right, #7a0000, #c40000, purple), url('/images/2.png');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: lighten;
+  padding-bottom: 50px;
+}
+
+.hero-section .hero-image{
+  width: 100%;
+}
+
+.about-section{
+  background-image: linear-gradient(-200deg, #990202 10%, #c40000, #c40000, purple, purple);
+}
+
+.profile-section{
+    background-image: linear-gradient(200deg, purple, purple, #c40000 35%, #7a0000, #c40000, #c40000, purple, purple);
+}
+
+.blogs-section{
+      background-image: linear-gradient(-200deg, purple, purple, #c40000 38%, #c40000, #c40000);
+}
+
+.model-overlay{
+    background: linear-gradient(to bottom, transparent, transparent, rgba(128, 0, 128, 0.600)),
+}
+
+.main-blog-section {
+  width: 100%;
+  background-image: linear-gradient(200deg, purple, purple, #c40000 35%, #c40000, #c40000, purple, purple);
+}
+
+.main-model-section {
+  width: 100%;
+  background-image: linear-gradient(200deg, purple, purple, #c40000 35%, #c40000, #c40000, purple, purple);
+}
+
+.main-service-section{
+  width: 100%;
+  background-image: linear-gradient(200deg, purple, purple, #c40000 35%, #c40000, #c40000, purple, purple);
+}

@@ -1,0 +1,278 @@
+================================================================================
+  PROJECT SUMMARY — Swati-Kaur (CRUD App)
+  Updated: 2026-03-27
+  Conversations: Session 1 (Setup) + Session 2 (Supabase + Vercel Prep)
+================================================================================
+
+--------------------------------------------------------------------------------
+PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+Name        : crud_app (Swati-Kaur)
+Type        : Full-Stack Next.js Web Application
+Purpose     : Content Management System — Model Profiles + Blog Posts
+Framework   : Next.js 15 (App Router) + React 19
+Database    : PostgreSQL + Prisma ORM 7.2.0
+Cloud DB    : Supabase (PostgreSQL hosted)
+Storage     : Supabase Storage (bucket: uploads)
+Styling     : Tailwind CSS 4 + Inline Styles
+Auth        : JWT (jsonwebtoken) + bcryptjs
+Editor      : React Quill (Rich Text)
+Language    : TypeScript
+Deployment  : Vercel (planned)
+
+--------------------------------------------------------------------------------
+PROJECT STRUCTURE
+--------------------------------------------------------------------------------
+app/
+  (admin)/dashboard/         → Admin dashboard (protected routes)
+    components/              → DashboardLayout, Sidebar, Navbar
+    blogs/                   → Blog list, create, edit pages
+    models/                  → Model list, create, edit pages
+  (auth)/login/              → Login page
+  (website)/                 → Public website
+    blogs/                   → Blog listing + detail pages
+    models/                  → Model listing + detail pages
+    privacy-policy/
+    rates/
+    services/
+    components/              → Navbar, Footer, ActionButtons, etc.
+  api/
+    blogs/                   → CRUD API for blogs (image → Supabase Storage)
+    models/                  → CRUD API for models (image → Supabase Storage)
+    upload/                  → Generic image upload/delete (Supabase Storage)
+    website/                 → Public read-only APIs
+  actions/                   → Server actions (auth, blog, model)
+  lib/                       → auth.ts (JWT), db.ts (Prisma client)
+  generated/prisma/          → Prisma generated client
+
+prisma/
+  schema.prisma              → DB schema (User, Model, Blog)
+  migrations/                → 2 migrations applied to Supabase
+
+scripts/
+  seed.ts                    → Creates default admin user
+
+--------------------------------------------------------------------------------
+DATABASE MODELS
+--------------------------------------------------------------------------------
+User    → id, email, username, password, createdAt
+Model   → id, model_name, model_age, model_location, model_image,
+          model_desc, slug, meta_title, meta_description, meta_keyword,
+          createdAt, updatedAt
+Blog    → id, blog_name, blog_image, blog_date, blog_desc,
+          slug, meta_title, meta_description, meta_keyword,
+          createdAt, updatedAt
+
+Default Admin Credentials:
+  Email    : admin@swati.com
+  Password : sajdeen123
+
+--------------------------------------------------------------------------------
+ENVIRONMENT VARIABLES (.env)
+--------------------------------------------------------------------------------
+DATABASE_URL              → Supabase PostgreSQL session pooler (port 5432)
+JWT_SECRET                → JWT signing secret
+NEXT_PUBLIC_SUPABASE_URL  → https://rxczymbnnwjwpohzevpv.supabase.co
+SUPABASE_SERVICE_ROLE_KEY → Service role key (server-side only)
+NEXT_PUBLIC_SITE_URL      → http://localhost:3000 (change to Vercel URL on deploy)
+NEXTAUTH_URL              → http://localhost:3000
+
+NOTE: On Vercel, set NEXT_PUBLIC_SITE_URL = https://your-app.vercel.app
+
+--------------------------------------------------------------------------------
+SESSION 1 — WHAT WAS DONE
+--------------------------------------------------------------------------------
+
+STEP 1: PROJECT EXPLORATION & INITIAL SETUP
+--------------------------------------------
+- Explored full project structure
+- Identified tech stack: Next.js 15, Prisma 7, PostgreSQL, Tailwind CSS
+- Read .env file — DATABASE_URL, JWT_SECRET configured
+
+STEP 2: CRITICAL BUG FIXES (First Round)
+------------------------------------------
+Problem 1 — Missing /api/upload route
+  - app/actions/blog.ts and app/actions/model.ts were calling
+    POST /api/upload and DELETE /api/upload for image handling
+  - This route did NOT exist → image upload was completely broken
+  Fix: Created app/api/upload/route.ts
+    - POST: saves image, returns imageUrl
+    - DELETE: safely removes image
+
+Problem 2 — Prisma 7 datasource configuration
+  - Prisma 7 removed "url = env(...)" from schema.prisma
+  - PrismaClient needs a driver adapter in Prisma 7
+  Fix:
+    - Installed @prisma/adapter-pg + pg + @types/pg
+    - Updated app/lib/db.ts to use PrismaPg adapter
+    - Updated scripts/seed.ts same way
+    - Added 'dotenv/config' import to seed.ts
+
+Problem 3 — Model slug generation bug
+  - app/api/models/route.ts only replaced first space, no uniqueness check
+  Fix: Used slugify library with uniqueness loop
+
+Problem 4 — Sensitive password logging in auth.ts
+  Fix: Removed all debug console.log lines with sensitive data
+
+STEP 3: DATABASE SETUP
+-----------------------
+- Ran: npx prisma generate
+- Ran: npx prisma migrate deploy → 2 migrations applied
+- Ran: npx tsx scripts/seed.ts → Admin user created
+- App started: npm run dev
+
+STEP 4: DASHBOARD ERROR FIX
+-----------------------------
+Root Cause 1 — DashboardLayout was a Server Component passing functions as props
+  Fix: Added 'use client' + useState + real toggleSidebar/closeSidebar handlers
+
+Root Cause 2 — Sidebar <aside> was completely empty
+  Fix: Rebuilt full navigation with accordion, active states, mobile close button
+
+Root Cause 3 — Nested <html><body> in route group layouts
+  Fix: (admin)/layout.tsx and (website)/layout.tsx cleaned up
+
+STEP 5: NEW SIDEBAR & NAVBAR (User Provided Design)
+-----------------------------------------------------
+- Navbar: white bg, hamburger menu, avatar dropdown with logout
+- Sidebar: white bg, purple active border, accordion for Models & Blogs
+- DashboardLayout: lg:ml-64 offset, proper prop passing
+
+STEP 6: FORM UX FIXES (alert() removal)
+-----------------------------------------
+- On SUCCESS → immediate redirect with ?msg=created param
+- On ERROR → inline red error banner on form
+- List pages read ?msg param → show green toast → clean URL
+
+STEP 7: DESCRIPTION COLUMN — WHITE TEXT VISIBILITY FIX
+-------------------------------------------------------
+Fix: DOMPurify.sanitize(desc, { FORBID_ATTR: ['style'] }) in table preview
+     → strips inline styles so white text on white bg is no longer invisible
+     → detail pages still render full rich text styling
+
+--------------------------------------------------------------------------------
+SESSION 2 — SUPABASE + VERCEL PREP
+--------------------------------------------------------------------------------
+
+STEP 8: SUPABASE DATABASE SETUP
+---------------------------------
+- Created Supabase project (region: ap-south-1)
+- Connection: Session pooler URL (port 5432) in DATABASE_URL
+  Note: password contains @ → must be URL-encoded as %40
+- Ran: npx prisma migrate deploy → both migrations applied to Supabase
+- Ran: npx tsx scripts/seed.ts → admin user seeded to Supabase
+
+STEP 9: SUPABASE STORAGE — IMAGE UPLOAD MIGRATION
+---------------------------------------------------
+Problem:
+  - app/api/models/route.ts and app/api/blogs/route.ts were saving images
+    to local filesystem (public/uploads/) using fs.writeFile
+  - Vercel is serverless — filesystem writes don't persist → images lost on deploy
+  - app/actions/model.ts and app/actions/blog.ts had hardcoded
+    'http://localhost:3000/api/upload' → breaks on Vercel
+
+Fix:
+  - Installed @supabase/supabase-js
+  - Created Supabase Storage bucket: "uploads" (public)
+  - app/api/upload/route.ts → rewrote to use Supabase Storage SDK
+      POST: uploads to uploads/ bucket, returns full public URL
+      DELETE: extracts filename from URL, removes from bucket
+  - app/api/models/route.ts → removed fs/path imports, uses Supabase Storage
+      saves to uploads/models/model-{timestamp}.{ext}
+  - app/api/blogs/route.ts → removed fs/path imports, uses Supabase Storage
+      saves to uploads/blogs/blog-{timestamp}.{ext}
+  - app/actions/model.ts → replaced hardcoded localhost with NEXT_PUBLIC_SITE_URL
+  - app/actions/blog.ts → replaced hardcoded localhost with NEXT_PUBLIC_SITE_URL
+
+Result: image full public URL saved to model_image / blog_image columns:
+  https://rxczymbnnwjwpohzevpv.supabase.co/storage/v1/object/public/uploads/models/model-xxx.webp
+
+STEP 10: NEXT.JS IMAGE HOSTNAME FIX
+-------------------------------------
+Problem: next/image threw error — Supabase hostname not whitelisted
+Fix: Added remotePatterns to next.config.ts:
+  hostname: "*.supabase.co"
+  pathname: "/storage/v1/object/public/**"
+
+--------------------------------------------------------------------------------
+FILES CREATED
+--------------------------------------------------------------------------------
+app/api/upload/route.ts          → Generic image upload/delete (Supabase Storage)
+
+--------------------------------------------------------------------------------
+FILES MODIFIED (All Sessions)
+--------------------------------------------------------------------------------
+app/lib/db.ts                    → Prisma 7 PrismaPg adapter
+app/actions/auth.ts              → Removed sensitive password logging
+app/actions/model.ts             → localhost → NEXT_PUBLIC_SITE_URL
+app/actions/blog.ts              → localhost → NEXT_PUBLIC_SITE_URL
+app/api/models/route.ts          → Slug fix + Supabase Storage upload
+app/api/blogs/route.ts           → Supabase Storage upload
+app/api/upload/route.ts          → Rewrote: local fs → Supabase Storage
+scripts/seed.ts                  → Prisma 7 adapter + dotenv/config
+app/(admin)/layout.tsx           → Removed nested html/body tags
+app/(website)/layout.tsx         → Removed nested html/body tags
+app/(admin)/dashboard/components/DashboardLayout.tsx  → 'use client' + state
+app/(admin)/dashboard/components/Sidebar.tsx          → New design + nav links
+app/(admin)/dashboard/components/Navbar.tsx           → New design (white)
+app/(admin)/dashboard/models/ModelsContent.tsx        → Toast + FORBID_ATTR fix
+app/(admin)/dashboard/blogs/BlogContent.tsx           → Toast + FORBID_ATTR fix
+app/(admin)/dashboard/models/create/CreateModelForm.tsx → No alert, redirect
+app/(admin)/dashboard/blogs/create/CreateBlogForm.tsx   → No alert, redirect
+app/(admin)/dashboard/models/edit/[id]/EditModelForm.tsx → No alert, redirect
+app/(admin)/dashboard/blogs/edit/[id]/EditBlogForm.tsx   → No alert, redirect
+next.config.ts                   → Supabase hostname in remotePatterns
+
+--------------------------------------------------------------------------------
+PACKAGES INSTALLED
+--------------------------------------------------------------------------------
+@prisma/adapter-pg    → Prisma 7 PostgreSQL driver adapter (required)
+pg                    → PostgreSQL client
+@types/pg             → TypeScript types for pg
+@supabase/supabase-js → Supabase client (Storage + DB)
+
+--------------------------------------------------------------------------------
+APP URLS
+--------------------------------------------------------------------------------
+Public Website    : http://localhost:3000
+Login Page        : http://localhost:3000/login
+Admin Dashboard   : http://localhost:3000/dashboard
+Models List       : http://localhost:3000/dashboard/models
+Create Model      : http://localhost:3000/dashboard/models/create
+Blogs List        : http://localhost:3000/dashboard/blogs
+Create Blog       : http://localhost:3000/dashboard/blogs/create
+Public Models     : http://localhost:3000/models
+Public Blogs      : http://localhost:3000/blogs
+
+--------------------------------------------------------------------------------
+HOW TO RUN (LOCAL)
+--------------------------------------------------------------------------------
+1. Check .env has correct DATABASE_URL (Supabase session pooler)
+2. npm install
+3. npx prisma generate
+4. npx prisma migrate deploy
+5. npx tsx scripts/seed.ts     (first time only — creates admin user)
+6. npm run dev
+7. Open http://localhost:3000
+
+--------------------------------------------------------------------------------
+VERCEL DEPLOYMENT CHECKLIST
+--------------------------------------------------------------------------------
+1. Push code to GitHub (make sure .env is in .gitignore)
+2. Connect GitHub repo to Vercel
+3. Add these Environment Variables in Vercel dashboard:
+   - DATABASE_URL         → Supabase transaction pooler URL (port 6543)
+   - JWT_SECRET           → same as local
+   - NEXT_PUBLIC_SUPABASE_URL   → https://rxczymbnnwjwpohzevpv.supabase.co
+   - SUPABASE_SERVICE_ROLE_KEY  → service role key
+   - NEXT_PUBLIC_SITE_URL       → https://your-app.vercel.app
+4. Deploy
+5. No seed needed — Supabase DB already has admin user
+
+NOTE: On Vercel use transaction pooler (port 6543) for DATABASE_URL,
+      not session pooler (port 5432) — Vercel requires it for serverless.
+
+================================================================================
+END OF SUMMARY
+================================================================================
