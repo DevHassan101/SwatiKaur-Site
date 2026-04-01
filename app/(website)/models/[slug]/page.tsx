@@ -7,6 +7,7 @@ import { IoIosPin } from "react-icons/io";
 import { notFound } from "next/navigation";
 import prisma from "../../../lib/db";
 import Link from 'next/link';
+import DOMPurify from 'isomorphic-dompurify';
 
 
 type Props = {
@@ -25,10 +26,6 @@ export default async function ModelDetailPage({ params }: Props) {
   if (!model) {
     notFound();
   }
-
-  // Console logging for debugging
-  console.log("Slug value:", slug);
-  console.log("Model found:", model.model_name);
 
   return (
     <>
@@ -88,7 +85,7 @@ export default async function ModelDetailPage({ params }: Props) {
             prose-strong:text-white 
             prose-li:text-white/90
             break-words overflow-hidden"
-                dangerouslySetInnerHTML={{ __html: model.model_desc }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(model.model_desc) }}
               />
             </div>
           </div>

@@ -97,7 +97,7 @@ export async function GET() {
   try {
     const models = await prisma.model.findMany({
       orderBy: {
-        createdAt: "desc",
+        id: "asc",
       },
     });
 

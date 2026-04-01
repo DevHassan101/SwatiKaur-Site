@@ -15,8 +15,8 @@ interface NavbarProps {
 export default function Navbar({ user, onMenuClick }: NavbarProps) {
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const handleLogout = () => {
-    logoutAction();
+  const handleLogout = async () => {
+    await logoutAction();
   };
 
   return (

@@ -102,7 +102,7 @@ export async function GET() {
   try {
     const blogs = await prisma.blog.findMany({
       orderBy: {
-        createdAt: "desc",
+        id: "asc",
       },
     });
 

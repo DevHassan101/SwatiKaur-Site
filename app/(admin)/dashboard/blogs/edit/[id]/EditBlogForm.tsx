@@ -289,7 +289,6 @@ export default function EditBlogForm() {
             backgroundColor: 'white',
             marginBottom: '50px',
             border: '2px solid rgba(157, 0, 255, 0.2)',
-            overflow: 'hidden'
           }}>
             <ReactQuill
               theme="snow"
@@ -298,7 +297,7 @@ export default function EditBlogForm() {
               modules={modules}
               placeholder="Enter blog description..."
               style={{
-                height: '330px',
+                minHeight: '380px',
                 fontSize: '16px',
                 fontStyle: 'normal',
                 color: 'black'
