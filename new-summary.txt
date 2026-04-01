@@ -1,0 +1,64 @@
+claude --resume 227071d1-ff44-4f40-8d46-018f61be68f8    
+
+16. app/api/models/route.ts
+----------------------------
+- orderBy: createdAt "desc" → id "asc"
+  (admin table now shows ID 1,2,3... order)
+
+
+17. app/api/blogs/route.ts
+---------------------------
+- orderBy: createdAt "desc" → id "asc"
+  (admin table now shows ID 1,2,3... order)
+
+
+18. app/(admin)/dashboard/blogs/create/CreateBlogForm.tsx
+    app/(admin)/dashboard/models/create/CreateModelForm.tsx
+    app/(admin)/dashboard/blogs/edit/[id]/EditBlogForm.tsx
+    app/(admin)/dashboard/models/edit/[id]/EditModelForm.tsx
+----------------------------------------------------------
+RICH TEXT EDITOR FIX (all 4 forms):
+- Removed overflow: 'hidden' from Quill wrapper div
+  (was hiding toolbar after paste)
+- height: '330px' → minHeight: '380px'
+  (editor now grows with content, toolbar always visible)
+
+
+19. app/api/models/[id]/route.ts
+    app/api/blogs/[id]/route.ts
+----------------------------------
+IMAGE UPLOAD CONSISTENCY FIX (PUT + DELETE):
+- Previously: Create used Supabase Storage, but Edit/Delete used local filesystem (fs/path)
+- Fixed: Edit and Delete now also use Supabase Storage consistently
+- Added extractStoragePath() helper to extract bucket path from Supabase public URL
+- PUT: deletes old image from Supabase, uploads new image to Supabase
+- DELETE: deletes image from Supabase before removing DB record
+- Removed: fs, path imports (local filesystem logic fully removed)
+
+
+20. app/(admin)/dashboard/components/Navbar.tsx
+------------------------------------------------
+LOGOUT BUG FIX:
+- handleLogout was calling logoutAction() without await
+- Fixed: async/await added so redirect happens properly after cookie deletion
+
+
+21. app/(website)/models/[slug]/page.tsx
+-----------------------------------------
+XSS SECURITY FIX:
+- dangerouslySetInnerHTML was rendering model_desc without sanitization
+- Fixed: isomorphic-dompurify added, DOMPurify.sanitize() applied
+- Removed 2 debug console.log statements left from development
+
+
+22. app/(website)/blogs/[slug]/page.tsx
+----------------------------------------
+XSS SECURITY FIX:
+- dangerouslySetInnerHTML was rendering blog_desc without sanitization
+- Fixed: isomorphic-dompurify added, DOMPurify.sanitize() applied
+
+
+23. app/(website)/components/Navbar.tsx
+----------------------------------------
+TYPO FIX:
+- "tex t-md" → "text-md" (broken Tailwind class with space in middle)

@@ -57,7 +57,7 @@ export default function Navbar() {
             ))}
           </ul>
           <div className="flex items-center gap-4">
-            <Link href="/contact-us" className="hidden md:flex items-center bg-red-400 tex t-md text-white px-4 py-2 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300">
+            <Link href="/contact-us" className="hidden md:flex items-center bg-red-400 text-md text-white px-4 py-2 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300">
               Contact Us
               <span className="ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-white text-red-400">
                 <FaPhone size={12} />

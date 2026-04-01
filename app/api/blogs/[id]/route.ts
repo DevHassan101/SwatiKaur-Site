@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../../app/lib/db";
-import { promises as fs } from "fs";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 import slugify from "slugify";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+const BUCKET = "uploads";
+
+function extractStoragePath(publicUrl: string): string | null {
+  try {
+    const marker = `/object/public/${BUCKET}/`;
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return publicUrl.slice(idx + marker.length);
+  } catch {
+    return null;
+  }
+}
 
 // GET - Fetch single blog
 export async function GET(
@@ -60,14 +76,14 @@ export async function PUT(
       return NextResponse.json({ error: "Blog not found" }, { status: 404 });
     }
 
-    // 1️⃣ Regenerate slug if blog_name changed
+    // Regenerate slug if blog_name changed
     let slug = existingBlog.slug;
 
     if (blog_name !== existingBlog.blog_name) {
       let baseSlug = slugify(blog_name, {
         lower: true,
         strict: true,
-        trim: true
+        trim: true,
       });
 
       if (baseSlug.length > 200) {
@@ -80,10 +96,9 @@ export async function PUT(
       while (true) {
         const existing = await prisma.blog.findUnique({
           where: { slug },
-          select: { id: true }
+          select: { id: true },
         });
 
-        // If slug doesn't exist OR it's the same blog being updated
         if (!existing || existing.id === Number(id)) break;
 
         slug = `${baseSlug}-${count}`;
@@ -95,37 +110,43 @@ export async function PUT(
 
     // If new image is uploaded
     if (file && file.type.startsWith("image/")) {
-      // Delete old image if exists
+      // Delete old image from Supabase if exists
       if (existingBlog.blog_image) {
-        const oldImagePath = path.join(
-          process.cwd(),
-          "public",
-          existingBlog.blog_image
-        );
-        try {
-          await fs.unlink(oldImagePath);
-        } catch (err) {
-          console.warn("Old image not found, skipping delete");
+        const oldPath = extractStoragePath(existingBlog.blog_image);
+        if (oldPath) {
+          const { error: deleteError } = await supabase.storage
+            .from(BUCKET)
+            .remove([oldPath]);
+          if (deleteError) {
+            console.warn("Failed to delete old image from Supabase:", deleteError.message);
+          }
         }
       }
 
-      // Upload new image
+      // Upload new image to Supabase
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const uploadDir = path.join(process.cwd(), "public/uploads/blogs");
-      await fs.mkdir(uploadDir, { recursive: true });
-      const fileName = `blog-${Date.now()}.${file.type.split("/")[1]}`;
-      const filePath = path.join(uploadDir, fileName);
-      await fs.writeFile(filePath, buffer);
-      imageUrl = `/uploads/blogs/${fileName}`;
+      const fileName = `blogs/blog-${Date.now()}.${file.type.split("/")[1]}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(fileName, buffer, { contentType: file.type });
+
+      if (uploadError) {
+        console.error("Supabase upload error:", uploadError);
+        return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
+      }
+
+      const { data: publicData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
+      imageUrl = publicData.publicUrl;
     }
 
-    // 2️⃣ Update blog with new slug
+    // Update blog
     const blog = await prisma.blog.update({
       where: { id: Number(id) },
       data: {
         blog_name,
-        slug, // Updated slug
+        slug,
         blog_desc,
         blog_image: imageUrl,
         blog_date: new Date(blog_date + "T00:00:00.000Z"),
@@ -158,13 +179,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Blog not found" }, { status: 404 });
     }
 
-    // Delete image if exists
+    // Delete image from Supabase if exists
     if (blog.blog_image) {
-      const imagePath = path.join(process.cwd(), "public", blog.blog_image);
-      try {
-        await fs.unlink(imagePath);
-      } catch (err) {
-        console.warn("Image not found, skipping delete");
+      const storagePath = extractStoragePath(blog.blog_image);
+      if (storagePath) {
+        const { error: deleteError } = await supabase.storage
+          .from(BUCKET)
+          .remove([storagePath]);
+        if (deleteError) {
+          console.warn("Failed to delete image from Supabase:", deleteError.message);
+        }
       }
     }
 

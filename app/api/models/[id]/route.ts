@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../../app/lib/db";
-import { promises as fs } from "fs";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+const BUCKET = "uploads";
+
+function extractStoragePath(publicUrl: string): string | null {
+  try {
+    const marker = `/object/public/${BUCKET}/`;
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return publicUrl.slice(idx + marker.length);
+  } catch {
+    return null;
+  }
+}
 
 // GET - Fetch single model
 export async function GET(
@@ -72,30 +88,35 @@ export async function PUT(
 
     // If new image is uploaded
     if (file && file.type.startsWith("image/")) {
-      // Delete old image if exists
+      // Delete old image from Supabase if exists
       if (existingModel.model_image) {
-        const oldImagePath = path.join(
-          process.cwd(),
-          "public",
-          existingModel.model_image
-        );
-        try {
-          await fs.unlink(oldImagePath);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (err) {
-          console.warn("Old image not found, skipping delete");
+        const oldPath = extractStoragePath(existingModel.model_image);
+        if (oldPath) {
+          const { error: deleteError } = await supabase.storage
+            .from(BUCKET)
+            .remove([oldPath]);
+          if (deleteError) {
+            console.warn("Failed to delete old image from Supabase:", deleteError.message);
+          }
         }
       }
 
-      // Upload new image
+      // Upload new image to Supabase
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const uploadDir = path.join(process.cwd(), "public/uploads/models");
-      await fs.mkdir(uploadDir, { recursive: true });
-      const fileName = `model-${Date.now()}.${file.type.split("/")[1]}`;
-      const filePath = path.join(uploadDir, fileName);
-      await fs.writeFile(filePath, buffer);
-      imageUrl = `/uploads/models/${fileName}`;
+      const fileName = `models/model-${Date.now()}.${file.type.split("/")[1]}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(fileName, buffer, { contentType: file.type });
+
+      if (uploadError) {
+        console.error("Supabase upload error:", uploadError);
+        return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
+      }
+
+      const { data: publicData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
+      imageUrl = publicData.publicUrl;
     }
 
     // Update model
@@ -137,14 +158,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Model not found" }, { status: 404 });
     }
 
-    // Delete image if exists
+    // Delete image from Supabase if exists
     if (model.model_image) {
-      const imagePath = path.join(process.cwd(), "public", model.model_image);
-      try {
-        await fs.unlink(imagePath);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (err) {
-        console.warn("Image not found, skipping delete");
+      const storagePath = extractStoragePath(model.model_image);
+      if (storagePath) {
+        const { error: deleteError } = await supabase.storage
+          .from(BUCKET)
+          .remove([storagePath]);
+        if (deleteError) {
+          console.warn("Failed to delete image from Supabase:", deleteError.message);
+        }
       }
     }
 

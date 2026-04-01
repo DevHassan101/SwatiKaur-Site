@@ -95,8 +95,8 @@ export default function CreateBlogForm() {
 
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '10px', color: '#374151' }}>Blog Description</label>
-          <div style={{ borderRadius: '6px', backgroundColor: 'white', marginBottom: '50px', border: '2px solid rgba(157,0,255,0.2)', overflow: 'hidden' }}>
-            <ReactQuill theme="snow" value={formData.blog_desc} onChange={(value) => setFormData({ ...formData, blog_desc: value })} modules={modules} placeholder="Enter blog description..." style={{ height: '330px', fontSize: '16px', color: 'black' }} />
+          <div style={{ borderRadius: '6px', backgroundColor: 'white', marginBottom: '50px', border: '2px solid rgba(157,0,255,0.2)' }}>
+            <ReactQuill theme="snow" value={formData.blog_desc} onChange={(value) => setFormData({ ...formData, blog_desc: value })} modules={modules} placeholder="Enter blog description..." style={{ minHeight: '380px', fontSize: '16px', color: 'black' }} />
           </div>
         </div>
 

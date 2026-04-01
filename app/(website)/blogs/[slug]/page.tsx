@@ -2,6 +2,7 @@ import { FaRegCalendarAlt } from "react-icons/fa";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import prisma from "../../../lib/db";
+import DOMPurify from 'isomorphic-dompurify';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -55,7 +56,7 @@ export default async function BlogDetails({ params }: Props) {
             prose-strong:text-white 
             prose-li:text-white/90
             break-words overflow-hidden"
-                dangerouslySetInnerHTML={{ __html: blog.blog_desc }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.blog_desc) }}
               />
             </div>
           </div>
